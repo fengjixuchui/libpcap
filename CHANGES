@@ -1,7 +1,7 @@
 Monthday, Month DD, YYYY:
   Summary for 1.11.0 libpcap release (so far!)
     Source code:
-      Use C99 fixed-width integer types, rather than self-defiined
+      Use C99 fixed-width integer types, rather than self-defined
         fixed-width integer types, in rpcap code.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
@@ -28,6 +28,9 @@ Monthday, Month DD, YYYY:
     Building and testing:
       Remove awk code from mkdep.
       Apply GNU Hurd support patch from the Debian package.
+      cmake: Update the minimum required version to 2.8.12 (except Windows).
+      Makefile.in: Add the releasecheck target.
+      Cirrus CI: Add the "make releasecheck" command in the Linux task.
 
 Monthday, Month DD, YYYY:
   Summary for 1.10.2 libpcap release (so far!)
