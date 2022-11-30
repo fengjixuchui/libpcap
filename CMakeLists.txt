@@ -12,8 +12,15 @@ endif(WIN32)
 # neither do we with autotools; don't do so with CMake, either, and
 # suppress warnings about that.
 #
+# Setting CMAKE_MACOSX_RPATH to FALSE uses the old behavior,
+# but removes the POLICY CMP0042 OLD deprecated warning.
+# See https://cmake.org/cmake/help/latest/policy/CMP0042.html
+#
+if (NOT DEFINED CMAKE_MACOSX_RPATH)
+    set(CMAKE_MACOSX_RPATH FALSE)
+endif()
 if(POLICY CMP0042)
-    cmake_policy(SET CMP0042 OLD)
+    cmake_policy(SET CMP0042 NEW)
 endif()
 
 #
@@ -60,6 +67,18 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 # lists to project() based on the system.
 #
 project(pcap C)
+
+#
+# Setting CMAKE_MACOSX_RPATH to FALSE causes the installed
+# libpcap.A.dylib to have just libpcap.A.dylib as the install
+# name;  Apple built libpcap with an install_name of /usr/lib/libpcap.A.dylib
+# (back when they still shipped individual system dylibs rather than
+# shipping a pre-built shared library cache, at least), and we do the
+# same with autotools; do the same with CMake.
+#
+if (NOT DEFINED CMAKE_INSTALL_NAME_DIR)
+    set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
 
 #
 # For getting raw lists of --libs and --libs --static information from a
