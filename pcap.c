@@ -4211,6 +4211,20 @@ pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
 	return (-1);
 }
 
+static void
+pcap_breakloop_dead(pcap_t *p _U_)
+{
+	/*
+	 * A "dead" pcap_t is just a placeholder to use in order to
+	 * compile a filter to BPF code or to open a savefile for
+	 * writing.  It doesn't support any operations, including
+	 * capturing or reading packets, so there will never be a
+	 * get-packets loop in progress to break out *of*.
+	 *
+	 * As such, this routine doesn't need to do anything.
+	 */
+}
+
 static int
 pcap_inject_dead(pcap_t *p, const void *buf _U_, int size _U_)
 {
@@ -4424,6 +4438,7 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->live_dump_ended_op = pcap_live_dump_ended_dead;
 	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
 #endif
+	p->breakloop_op = pcap_breakloop_dead;
 	p->cleanup_op = pcap_cleanup_dead;
 
 	/*
