@@ -1,8 +1,9 @@
-Monthday, Month DD, YYYY:
+DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.11.0 libpcap release (so far!)
     Source code:
       Use C99 fixed-width integer types, rather than self-defined
         fixed-width integer types, in rpcap code.
+      Remove an always-false pointer test from snf_read().
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
@@ -35,9 +36,25 @@ Monthday, Month DD, YYYY:
       Makefile.in: Add "make -s install" in the releasecheck target.
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
+      Makefile.in: Add a "touch .devel" command in the releasecheck target.
 
-Monthday, Month DD, YYYY:
-  Summary for 1.10.3 libpcap release (so far!)
+DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
+  Summary for 1.10.4 libpcap release (so far!)
+    Building and testing:
+      Require at least pkg-config 0.17.0, as we use --static.
+
+Thursday, January 12, 2023 / The Tcpdump Group
+  Summary for 1.10.3 libpcap release
+    Source code:
+      Sort the PUBHDR variable in Makefile.in in "ls" order.
+      Fix typo in comment in pflog.h.
+      Remove two no-longer-present files from .gitignore.
+      Update code and comments for handling failure to set promiscuous
+        mode based on new information.
+    Building and testing:
+      install: Fixed not to install the non-public pcap-util.h header.
+      pcap-config: add a --version flag.
+      Makefile.in: Add some missing files in the distclean target.
 
 Saturday, December 31, 2022 / The Tcpdump Group
   Summary for 1.10.2 libpcap release
