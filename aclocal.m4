@@ -39,7 +39,6 @@ AC_DEFUN(AC_LBL_C_INIT_BEFORE_CC,
 [
     AC_BEFORE([$0], [AC_LBL_C_INIT])
     AC_BEFORE([$0], [AC_PROG_CC])
-    AC_BEFORE([$0], [AC_LBL_FIXINCLUDES])
     AC_BEFORE([$0], [AC_LBL_DEVEL])
     AC_ARG_WITH(gcc, [  --without-gcc           don't use gcc])
     $1=""
@@ -94,7 +93,6 @@ dnl	LBL_CFLAGS
 dnl
 AC_DEFUN(AC_LBL_C_INIT,
 [
-    AC_BEFORE([$0], [AC_LBL_FIXINCLUDES])
     AC_BEFORE([$0], [AC_LBL_DEVEL])
     AC_BEFORE([$0], [AC_LBL_SHLIBS_INIT])
     if test "$GCC" = yes ; then
@@ -628,57 +626,6 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 ])
 
 #
-# Try compiling a sample of the type of code that appears in
-# gencode.c with "inline", "__inline__", and "__inline".
-#
-# Autoconf's AC_C_INLINE, at least in autoconf 2.13, isn't good enough,
-# as it just tests whether a function returning "int" can be inlined;
-# at least some versions of HP's C compiler can inline that, but can't
-# inline a function that returns a struct pointer.
-#
-# Make sure we use the V_CCOPT flags, because some of those might
-# disable inlining.
-#
-AC_DEFUN(AC_LBL_C_INLINE,
-    [AC_MSG_CHECKING(for inline)
-    save_CFLAGS="$CFLAGS"
-    CFLAGS="$V_CCOPT"
-    AC_CACHE_VAL(ac_cv_lbl_inline, [
-	ac_cv_lbl_inline=""
-	ac_lbl_cc_inline=no
-	for ac_lbl_inline in inline __inline__ __inline
-	do
-	    AC_TRY_COMPILE(
-		[#define inline $ac_lbl_inline
-		static inline struct iltest *foo(void);
-		struct iltest {
-		    int iltest1;
-		    int iltest2;
-		};
-
-		static inline struct iltest *
-		foo()
-		{
-		    static struct iltest xxx;
-
-		    return &xxx;
-		}],,ac_lbl_cc_inline=yes,)
-	    if test "$ac_lbl_cc_inline" = yes ; then
-		break;
-	    fi
-	done
-	if test "$ac_lbl_cc_inline" = yes ; then
-	    ac_cv_lbl_inline=$ac_lbl_inline
-	fi])
-    CFLAGS="$save_CFLAGS"
-    if test ! -z "$ac_cv_lbl_inline" ; then
-	AC_MSG_RESULT($ac_cv_lbl_inline)
-    else
-	AC_MSG_RESULT(no)
-    fi
-    AC_DEFINE_UNQUOTED(inline, $ac_cv_lbl_inline, [Define as token for inline if inlining supported])])
-
-#
 # Test whether we have __atomic_load_n() and __atomic_store_n().
 #
 # We use AC_TRY_LINK because AC_TRY_COMPILE will succeed, as the
@@ -717,96 +664,6 @@ AC_DEFUN(AC_PCAP_C___ATOMICS,
 	    AC_DEFINE(HAVE___ATOMIC_STORE_N, 1,
 		[define if __atomic_store_n is supported by the compiler])
 	fi])
-
-dnl
-dnl If using gcc, make sure we have ANSI ioctl definitions
-dnl
-dnl usage:
-dnl
-dnl	AC_LBL_FIXINCLUDES
-dnl
-AC_DEFUN(AC_LBL_FIXINCLUDES,
-    [if test "$GCC" = yes ; then
-	    AC_MSG_CHECKING(for ANSI ioctl definitions)
-	    AC_CACHE_VAL(ac_cv_lbl_gcc_fixincludes,
-		AC_TRY_COMPILE(
-		    [/*
-		     * This generates a "duplicate case value" when fixincludes
-		     * has not be run.
-		     */
-#		include <sys/types.h>
-#		include <sys/time.h>
-#		include <sys/ioctl.h>
-#		ifdef HAVE_SYS_IOCCOM_H
-#		include <sys/ioccom.h>
-#		endif],
-		    [switch (0) {
-		    case _IO('A', 1):;
-		    case _IO('B', 1):;
-		    }],
-		    ac_cv_lbl_gcc_fixincludes=yes,
-		    ac_cv_lbl_gcc_fixincludes=no))
-	    AC_MSG_RESULT($ac_cv_lbl_gcc_fixincludes)
-	    if test $ac_cv_lbl_gcc_fixincludes = no ; then
-		    # Don't cache failure
-		    unset ac_cv_lbl_gcc_fixincludes
-		    AC_MSG_ERROR(see the INSTALL for more info)
-	    fi
-    fi])
-
-dnl
-dnl Checks to see if union wait is used with WEXITSTATUS()
-dnl
-dnl usage:
-dnl
-dnl	AC_LBL_UNION_WAIT
-dnl
-dnl results:
-dnl
-dnl	DECLWAITSTATUS (defined)
-dnl
-AC_DEFUN(AC_LBL_UNION_WAIT,
-    [AC_MSG_CHECKING(if union wait is used)
-    AC_CACHE_VAL(ac_cv_lbl_union_wait,
-	AC_TRY_COMPILE([
-#	include <sys/types.h>
-#	include <sys/wait.h>],
-	    [int status;
-	    u_int i = WEXITSTATUS(status);
-	    u_int j = waitpid(0, &status, 0);],
-	    ac_cv_lbl_union_wait=no,
-	    ac_cv_lbl_union_wait=yes))
-    AC_MSG_RESULT($ac_cv_lbl_union_wait)
-    if test $ac_cv_lbl_union_wait = yes ; then
-	    AC_DEFINE(DECLWAITSTATUS,union wait,[type for wait])
-    else
-	    AC_DEFINE(DECLWAITSTATUS,int,[type for wait])
-    fi])
-
-dnl
-dnl Checks to see if -R is used
-dnl
-dnl usage:
-dnl
-dnl	AC_LBL_HAVE_RUN_PATH
-dnl
-dnl results:
-dnl
-dnl	ac_cv_lbl_have_run_path (yes or no)
-dnl
-AC_DEFUN(AC_LBL_HAVE_RUN_PATH,
-    [AC_MSG_CHECKING(for ${CC-cc} -R)
-    AC_CACHE_VAL(ac_cv_lbl_have_run_path,
-	[echo 'main(){}' > conftest.c
-	${CC-cc} -o conftest conftest.c -R/a1/b2/c3 >conftest.out 2>&1
-	if test ! -s conftest.out ; then
-		ac_cv_lbl_have_run_path=yes
-	else
-		ac_cv_lbl_have_run_path=no
-	fi
-	rm -f -r conftest*])
-    AC_MSG_RESULT($ac_cv_lbl_have_run_path)
-    ])
 
 dnl
 dnl If the file .devel exists:
@@ -907,70 +764,6 @@ testme(unsigned short a)
 		    AC_MSG_WARN(can't find $name)
 	    fi
     fi])
-
-dnl
-dnl Improved version of AC_CHECK_LIB
-dnl
-dnl Thanks to John Hawkinson (jhawk@mit.edu)
-dnl
-dnl usage:
-dnl
-dnl	AC_LBL_CHECK_LIB(LIBRARY, FUNCTION [, ACTION-IF-FOUND [,
-dnl	    ACTION-IF-NOT-FOUND [, OTHER-LIBRARIES]]])
-dnl
-dnl results:
-dnl
-dnl	LIBS
-dnl
-dnl XXX - "AC_LBL_LIBRARY_NET" was redone to use "AC_SEARCH_LIBS"
-dnl rather than "AC_LBL_CHECK_LIB", so this isn't used any more.
-dnl We keep it around for reference purposes in case it's ever
-dnl useful in the future.
-dnl
-
-define(AC_LBL_CHECK_LIB,
-[AC_MSG_CHECKING([for $2 in -l$1])
-dnl Use a cache variable name containing the library, function
-dnl name, and extra libraries to link with, because the test really is
-dnl for library $1 defining function $2, when linked with potinal
-dnl library $5, not just for library $1.  Separate tests with the same
-dnl $1 and different $2's or $5's may have different results.
-ac_lib_var=`echo $1['_']$2['_']$5 | sed 'y%./+- %__p__%'`
-AC_CACHE_VAL(ac_cv_lbl_lib_$ac_lib_var,
-[ac_save_LIBS="$LIBS"
-LIBS="-l$1 $5 $LIBS"
-AC_TRY_LINK(dnl
-ifelse([$2], [main], , dnl Avoid conflicting decl of main.
-[/* Override any gcc2 internal prototype to avoid an error.  */
-]ifelse(AC_LANG, CPLUSPLUS, [#ifdef __cplusplus
-extern "C"
-#endif
-])dnl
-[/* We use char because int might match the return type of a gcc2
-    builtin and then its argument prototype would still apply.  */
-char $2();
-]),
-	    [$2()],
-	    eval "ac_cv_lbl_lib_$ac_lib_var=yes",
-	    eval "ac_cv_lbl_lib_$ac_lib_var=no")
-LIBS="$ac_save_LIBS"
-])dnl
-if eval "test \"`echo '$ac_cv_lbl_lib_'$ac_lib_var`\" = yes"; then
-  AC_MSG_RESULT(yes)
-  ifelse([$3], ,
-[changequote(, )dnl
-  ac_tr_lib=HAVE_LIB`echo $1 | sed -e 's/[^a-zA-Z0-9_]/_/g' \
-    -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/'`
-changequote([, ])dnl
-  AC_DEFINE_UNQUOTED($ac_tr_lib)
-  LIBS="-l$1 $LIBS"
-], [$3])
-else
-  AC_MSG_RESULT(no)
-ifelse([$4], , , [$4
-])dnl
-fi
-])
 
 dnl
 dnl AC_LBL_LIBRARY_NET
@@ -1178,10 +971,8 @@ dnl ---------------------------------------------
 dnl Internal wrapper calling pkg-config via PKG_CONFIG and, if
 dnl pkg-config fails, reporting the error and quitting.
 m4_define([_PKG_CONFIG_WITH_FLAGS],
-[if test -n "$$1"; then
-    pkg_cv_[]$1="$$1"
- else
-    pkg_cv_[]$1=`$PKG_CONFIG $2 "$3" 2>/dev/null`
+[if test ! -n "$$1"; then
+    $1=`$PKG_CONFIG $2 "$3" 2>/dev/null`
     if test "x$?" != "x0"; then
         #
         # That failed - report an error.

@@ -230,6 +230,7 @@ pcap_wsockinit(void)
  */
 int pcap_new_api;		/* pcap_lookupdev() always fails */
 int pcap_utf_8_mode;		/* Strings should be in UTF-8. */
+int pcap_mmap_32bit;		/* Map packet buffers with 32-bit addresses. */
 
 int
 pcap_init(unsigned int opts, char *errbuf)
@@ -265,6 +266,10 @@ pcap_init(unsigned int opts, char *errbuf)
 			}
 		}
 		pcap_utf_8_mode = 1;
+		break;
+
+	case PCAP_MMAP_32BIT:
+		pcap_mmap_32bit = 1;
 		break;
 
 	default:
@@ -1498,10 +1503,6 @@ pcap_lookupdev(char *errbuf)
    * XXX - that might not be large enough for capture devices
    * that aren't regular network interfaces.
    */
-  /* for old BSD systems, including bsdi3 */
-  #ifndef IF_NAMESIZE
-  #define IF_NAMESIZE IFNAMSIZ
-  #endif
 #endif
 	static char device[IF_NAMESIZE + 1];
 	char *ret;
@@ -3261,7 +3262,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(USB_LINUX_MMAPPED, "USB with padded Linux header"),
 	DLT_CHOICE(DECT, "DECT"),
 	DLT_CHOICE(AOS, "AOS Space Data Link protocol"),
-	DLT_CHOICE(WIHART, "Wireless HART"),
+	DLT_CHOICE(WIHART, "WirelessHART"),
 	DLT_CHOICE(FC_2, "Fibre Channel FC-2"),
 	DLT_CHOICE(FC_2_WITH_FRAME_DELIMS, "Fibre Channel FC-2 with frame delimiters"),
 	DLT_CHOICE(IPNET, "Solaris ipnet"),

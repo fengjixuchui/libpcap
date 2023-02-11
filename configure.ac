@@ -14,9 +14,9 @@ dnl
 # config.sub.
 #
 
-AC_PREREQ(2.64)
+AC_PREREQ([2.69])
 
-AC_INIT(pcap, m4_esyscmd_s([cat VERSION]))
+AC_INIT([pcap],[m4_esyscmd_s(cat VERSION)])
 AC_CONFIG_SRCDIR(pcap.c)
 AC_SUBST(PACKAGE_NAME)
 
@@ -24,9 +24,10 @@ AC_SUBST(PACKAGE_NAME)
 # These are the variables that are used in Makefile, pcap-config, and
 # libpcap.pc.
 #
-# CFLAGS: inherited from the environment, not modified by us (except
-# temporarily during tests that involve compilation).  Used only when
-# compiling C source.
+# CFLAGS: inherited from the environment, not modified by us except
+# for flags required for the platform for which we're building (and
+# except temporarily during tests that involve compilation).  Used only
+# when compiling C source.
 #
 # CXXFLAGS: inherited from the environment, not modified by us.  Used only
 # when compiling C++ source.
@@ -100,7 +101,7 @@ AC_SUBST(LIBS_STATIC)
 AC_SUBST(REQUIRES_PRIVATE)
 AC_SUBST(LIBS_PRIVATE)
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_HOST
 
 AC_LBL_C_INIT_BEFORE_CC(V_CCOPT, V_INCLS)
 #
@@ -157,7 +158,7 @@ esac
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
-AC_LBL_C_INLINE
+AC_C_INLINE
 AC_PCAP_C___ATOMICS
 
 #
@@ -167,22 +168,23 @@ AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
 dnl
-dnl Even if <net/bpf.h> were, on all OSes that support BPF, fixed to
-dnl include <sys/ioccom.h>, and we were to drop support for older
-dnl releases without that fix, so that pcap-bpf.c doesn't need to
-dnl include <sys/ioccom.h>, the test program in "AC_LBL_FIXINCLUDES"
-dnl in "aclocal.m4" uses it, so we would still have to test for it
-dnl and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
-dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
+dnl HAVE_SYS_IOCCOM_H will be required for a few workarounds until all
+dnl supported OSes that use BPF have <net/bpf.h> that includes <sys/ioccom.h>
+dnl (this might have already happened).
 dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 
-AC_LBL_SAVE_CHECK_STATE
+#
+# Check whether the platform for which we're compiling requires extra
+# defines and libraries.  If so, add them to CFLAGS and LIBS, as we want
+# all subsequent tests to be done with those defines and libraries.
+#
 case "$host_os" in
 haiku*)
 	#
-	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
+	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't
+	# use them.
 	#
 	CFLAGS="$CFLAGS -D_BSD_SOURCE"
 	#
@@ -191,9 +193,6 @@ haiku*)
 	AC_CHECK_LIB(bsd, getpass)
 	;;
 esac
-
-AC_LBL_FIXINCLUDES
-AC_LBL_RESTORE_CHECK_STATE
 
 AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNC(strerror_r,
@@ -995,7 +994,7 @@ haiku)
 	#
 	# Capture module
 	#
- 	PLATFORM_CXX_SRC="pcap-haiku.cpp"
+	PLATFORM_C_SRC="pcap-haiku.c"
 
 	#
 	# Just for the sake of it.
@@ -1732,8 +1731,8 @@ AC_ARG_ENABLE([remote],
    [enableval=no])
 case "$enableval" in
 yes)	AC_MSG_RESULT(yes)
-	AC_WARN([Remote packet capture may expose libpcap-based applications])
-	AC_WARN([to attacks by malicious remote capture servers!])
+	AC_MSG_WARN(Remote packet capture may expose libpcap-based applications)
+	AC_MSG_WARN(to attacks by malicious remote capture servers!)
 	#
 	# rpcapd requires pthreads on UN*X.
 	#
@@ -3184,7 +3183,7 @@ fi
 
 AC_PROG_INSTALL
 
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 
 AC_SUBST(V_SHLIB_CCOPT)
 AC_SUBST(V_SHLIB_CMD)
@@ -3209,12 +3208,12 @@ AC_SUBST(RPCAPD_LIBS)
 LIBS="$ADDITIONAL_LIBS $LIBS"
 LIBS_STATIC="$ADDITIONAL_LIBS_STATIC $LIBS_STATIC"
 
-AC_OUTPUT_COMMANDS([if test -f .devel; then
+AC_CONFIG_COMMANDS([.devel],[[if test -f .devel; then
 	echo timestamp > stamp-h
 	cat $srcdir/Makefile-devel-adds >> Makefile
 	make depend || exit 1
-fi])
-AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
+fi]])
+AC_CONFIG_FILES([Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap-tstamp.manmisc cbpf-savefile.manfile pcap-savefile.manfile pcap.3pcap
 	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap
@@ -3222,5 +3221,6 @@ AC_OUTPUT(Makefile grammar.y pcap-filter.manmisc pcap-linktype.manmisc
 	pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap
 	pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap
 	rpcapd/Makefile rpcapd/rpcapd.manadmin rpcapd/rpcapd-config.manfile
-	testprogs/Makefile)
+	testprogs/Makefile])
+AC_OUTPUT
 exit 0

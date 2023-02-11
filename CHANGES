@@ -37,11 +37,19 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Makefile.in: Add the whitespacecheck target.
       Cirrus CI: Run the "make whitespacecheck" command in the Linux task.
       Makefile.in: Add a "touch .devel" command in the releasecheck target.
+      autoconf: Add autogen.sh, remove configure and config.h.in and put
+        these generated files in the release tarball.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.4 libpcap release (so far!)
+    rpcap:
+      Fix name of launchd service.
+    Documentation:
+      Document use of rpcapd with systemd, launchd, inetd, and xinetd.
     Building and testing:
       Require at least pkg-config 0.17.0, as we use --static.
+      Get rid of the remains of gnuc.h.
+      Require at least autoconf 2.69.
 
 Thursday, January 12, 2023 / The Tcpdump Group
   Summary for 1.10.3 libpcap release
