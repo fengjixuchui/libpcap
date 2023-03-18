@@ -48,18 +48,6 @@ AC_DEFUN(AC_LBL_C_INIT_BEFORE_CC,
     if test "${CFLAGS+set}" = set; then
 	    LBL_CFLAGS="$CFLAGS"
     fi
-    if test -z "$CC" ; then
-	    case "$host_os" in
-
-	    bsdi*)
-		    AC_CHECK_PROG(SHLICC2, shlicc2, yes, no)
-		    if test $SHLICC2 = yes ; then
-			    CC=shlicc2
-			    export CC
-		    fi
-		    ;;
-	    esac
-    fi
     if test -z "$CC" -a "$with_gcc" = no ; then
 	    CC=cc
 	    export CC
@@ -207,22 +195,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # PCAP_API will be visible outside (shared) libraries.
 		    #
 		    AC_LBL_CHECK_COMPILER_OPT($1, -xldscope=hidden)
-		    ;;
-
-	    ultrix*)
-		    AC_MSG_CHECKING(that Ultrix $CC hacks const in prototypes)
-		    AC_CACHE_VAL(ac_cv_lbl_cc_const_proto,
-			AC_TRY_COMPILE(
-			    [#include <sys/types.h>],
-			    [struct a { int b; };
-			    void c(const struct a *)],
-			    ac_cv_lbl_cc_const_proto=yes,
-			    ac_cv_lbl_cc_const_proto=no))
-		    AC_MSG_RESULT($ac_cv_lbl_cc_const_proto)
-		    if test $ac_cv_lbl_cc_const_proto = no ; then
-			    AC_DEFINE(const,[],
-			        [to handle Ultrix compilers that don't support const in prototypes])
-		    fi
 		    ;;
 	    esac
 	    $1="$$1 -O"
@@ -628,7 +600,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 #
 # Test whether we have __atomic_load_n() and __atomic_store_n().
 #
-# We use AC_TRY_LINK because AC_TRY_COMPILE will succeed, as the
+# We use AC_LINK_IFELSE because AC_TRY_COMPILE will succeed, as the
 # compiler will just think that those functions are undefined,
 # and perhaps warn about that, but not fail to compile.
 #
@@ -636,14 +608,14 @@ AC_DEFUN(AC_PCAP_C___ATOMICS,
     [
 	AC_MSG_CHECKING(for __atomic_load_n)
 	AC_CACHE_VAL(ac_cv_have___atomic_load_n,
-	    AC_TRY_LINK([],
-		[
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[
 		    int i = 17;
 		    int j;
 		    j = __atomic_load_n(&i, __ATOMIC_RELAXED);
-		],
-		ac_have___atomic_load_n=yes,
-		ac_have___atomic_load_n=no))
+		]])],
+		[ac_have___atomic_load_n=yes],
+		[ac_have___atomic_load_n=no]))
 	AC_MSG_RESULT($ac_have___atomic_load_n)
 	if test $ac_have___atomic_load_n = yes ; then
 	    AC_DEFINE(HAVE___ATOMIC_LOAD_N, 1,
@@ -652,13 +624,13 @@ AC_DEFUN(AC_PCAP_C___ATOMICS,
 
 	AC_MSG_CHECKING(for __atomic_store_n)
 	AC_CACHE_VAL(ac_cv_have___atomic_store_n,
-	    AC_TRY_LINK([],
-		[
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[
 		    int i;
 		    __atomic_store_n(&i, 17, __ATOMIC_RELAXED);
-		],
-		ac_have___atomic_store_n=yes,
-		ac_have___atomic_store_n=no))
+		]])],
+		[ac_have___atomic_store_n=yes],
+		[ac_have___atomic_store_n=no]))
 	AC_MSG_RESULT($ac_have___atomic_store_n)
 	if test $ac_have___atomic_store_n = yes ; then
 	    AC_DEFINE(HAVE___ATOMIC_STORE_N, 1,
@@ -754,14 +726,16 @@ testme(unsigned short a)
 	    # .devel file; why should the ABI for which we produce code
 	    # depend on .devel?
 	    #
+	    AC_MSG_CHECKING([whether to use an os-proto.h header])
 	    os=`echo $host_os | sed -e 's/\([[0-9]][[0-9]]*\)[[^0-9]].*$/\1/'`
 	    name="lbl/os-$os.h"
 	    if test -f $name ; then
+		    AC_MSG_RESULT([yes, at "$name"])
 		    ln -s $name os-proto.h
 		    AC_DEFINE(HAVE_OS_PROTO_H, 1,
-			[if there's an os_proto.h for this platform, to use additional prototypes])
+			[if there's an os-proto.h for this platform, to use additional prototypes])
 	    else
-		    AC_MSG_WARN(can't find $name)
+		    AC_MSG_RESULT([no])
 	    fi
     fi])
 

@@ -8,6 +8,9 @@
 : "${LIBPCAP_TAINTED:=no}"
 : "${LIBPCAP_CMAKE_TAINTED:=no}"
 : "${MAKE_BIN:=make}"
+# At least one OS (AIX 7) where this software can build does not have at least
+# one command (mktemp) required for a successful run of "make releasetar".
+: "${TEST_RELEASETAR:=yes}"
 
 . ./build_common.sh
 # Install directory prefix
@@ -85,15 +88,6 @@ suncc-5.1[45]/SunOS-5.11)
     LIBPCAP_TAINTED=yes
     ;;
 */Haiku-*)
-    # (GCC 8.3.0 and later, Clang 9.0.1.)
-    # pcap-haiku.cpp:55:21: warning: unused variable 'handlep' [-Wunused-variable]
-    # pcap-haiku.cpp:50:37: warning: unused parameter 'maxPackets' [-Wunused-parameter]
-    # pcap-haiku.cpp:111:47: warning: unused parameter 'buffer' [-Wunused-parameter]
-    # pcap-haiku.cpp:111:59: warning: unused parameter 'size' [-Wunused-parameter]
-    # pcap-haiku.cpp:268:26: warning: unused parameter 'name' [-Wunused-parameter]
-    # pcap-haiku.cpp:274:26: warning: unused parameter 'name' [-Wunused-parameter]
-    # pcap-haiku.cpp:274:58: warning: unused parameter 'errbuf' [-Wunused-parameter]
-    #
     # (The warnings below come from GCC and Clang in CMake builds after installing
     # all system updates.)
     # gencode.c:4143:9: warning: converting a packed 'struct in6_addr' pointer
@@ -146,11 +140,28 @@ else
     run_after_echo "$MAKE_BIN" testprogs
 fi
 run_after_echo "$MAKE_BIN" install
+
+while read -r opts; do
+    # opts is meant to expand
+    # shellcheck disable=SC2086
+    run_after_echo "$PREFIX/bin/pcap-config" $opts
+done <<EOF
+--help
+--version
+--cflags
+--libs
+--additional-libs
+--libs --static
+--additional-libs --static
+--libs --static-pcap-only
+--additional-libs --static-pcap-only
+EOF
+
 # VALGRIND_CMD is meant either to collapse or to expand.
 # shellcheck disable=SC2086
 if [ "$CMAKE" = no ]; then
     run_after_echo $VALGRIND_CMD testprogs/findalldevstest
-    run_after_echo "$MAKE_BIN" releasetar
+    [ "$TEST_RELEASETAR" = yes ] && run_after_echo "$MAKE_BIN" releasetar
 else
     run_after_echo $VALGRIND_CMD run/findalldevstest
 fi

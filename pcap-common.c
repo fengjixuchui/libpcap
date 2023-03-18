@@ -964,7 +964,7 @@
  * which is stored with each packet:
  *
  *   EXP_PDU_TAG_DISSECTOR_NAME      the name of the Wireshark dissector
- * 				     that can make sense of the data stored.
+ *				     that can make sense of the data stored.
  *
  *   EXP_PDU_TAG_HEUR_DISSECTOR_NAME the name of the Wireshark heuristic
  *				     dissector that can make sense of the
@@ -1240,8 +1240,24 @@
  */
 #define LINKTYPE_AUERSWALD_LOG	296
 
-#define LINKTYPE_MATCHING_MAX	296		/* highest value in the "matching" range */
+/*
+ * Z-Wave packets with a TAP meta-data header
+ * https://gitlab.com/exegin/zwave-g9959-tap
+ * requested on tcpdump-workers@
+ */
+#define LINKTYPE_ZWAVE_TAP	297
 
+/*
+ * Silicon Labs debug channel protocol:
+ */
+#define LINKTYPE_SILABS_DEBUG_CHANNEL 298
+
+/*
+ * Ultra-wideband (UWB) controller interface protocol (UCI).
+ */
+#define LINKTYPE_FIRA_UCI	299
+
+#define LINKTYPE_MATCHING_MAX	299		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
@@ -1284,7 +1300,7 @@ static struct linktype_map {
 	{ DLT_FR,		LINKTYPE_FRELAY },
 #endif
 
-	{ DLT_ATM_RFC1483, 	LINKTYPE_ATM_RFC1483 },
+	{ DLT_ATM_RFC1483,	LINKTYPE_ATM_RFC1483 },
 	{ DLT_RAW,		LINKTYPE_RAW },
 	{ DLT_SLIP_BSDOS,	LINKTYPE_SLIP_BSDOS },
 	{ DLT_PPP_BSDOS,	LINKTYPE_PPP_BSDOS },

@@ -26,11 +26,6 @@
 #include <config.h>
 #endif
 
-#ifdef DECNETLIB
-#include <sys/types.h>
-#include <netdnet/dnetdb.h>
-#endif
-
 #ifdef _WIN32
   #include <winsock2.h>
   #include <ws2tcpip.h>
@@ -267,7 +262,7 @@ pcap_nametonetaddr(const char *name)
 	 * *not* always get set if getnetbyname_r() succeeds.
 	 */
 	np = NULL;
- 	err = getnetbyname_r(name, &result_buf, buf, sizeof buf, &np,
+	err = getnetbyname_r(name, &result_buf, buf, sizeof buf, &np,
 	    &h_errnoval);
 	if (err != 0) {
 		/*
@@ -296,16 +291,16 @@ pcap_nametonetaddr(const char *name)
 	else
 		np = &result_buf;
   #else
- 	/*
- 	 * We don't have any getnetbyname_r(); either we have a
- 	 * getnetbyname() that uses thread-specific data, in which
- 	 * case we're thread-safe (sufficiently recent FreeBSD,
- 	 * sufficiently recent Darwin-based OS, sufficiently recent
- 	 * HP-UX, sufficiently recent Tru64 UNIX), or we have the
- 	 * traditional getnetbyname() (everything else, including
- 	 * current NetBSD and OpenBSD), in which case we're not
- 	 * thread-safe.
- 	 */
+	/*
+	 * We don't have any getnetbyname_r(); either we have a
+	 * getnetbyname() that uses thread-specific data, in which
+	 * case we're thread-safe (sufficiently recent FreeBSD,
+	 * sufficiently recent Darwin-based OS, sufficiently recent
+	 * HP-UX, sufficiently recent Tru64 UNIX), or we have the
+	 * traditional getnetbyname() (everything else, including
+	 * current NetBSD and OpenBSD), in which case we're not
+	 * thread-safe.
+	 */
 	np = getnetbyname(name);
   #endif
 	if (np != NULL)
@@ -552,16 +547,16 @@ pcap_nametoproto(const char *str)
 	else
 		p = &result_buf;
   #else
- 	/*
- 	 * We don't have any getprotobyname_r(); either we have a
- 	 * getprotobyname() that uses thread-specific data, in which
- 	 * case we're thread-safe (sufficiently recent FreeBSD,
- 	 * sufficiently recent Darwin-based OS, sufficiently recent
- 	 * HP-UX, sufficiently recent Tru64 UNIX, Windows), or we have
+	/*
+	 * We don't have any getprotobyname_r(); either we have a
+	 * getprotobyname() that uses thread-specific data, in which
+	 * case we're thread-safe (sufficiently recent FreeBSD,
+	 * sufficiently recent Darwin-based OS, sufficiently recent
+	 * HP-UX, sufficiently recent Tru64 UNIX, Windows), or we have
 	 * the traditional getprotobyname() (everything else, including
- 	 * current NetBSD and OpenBSD), in which case we're not
- 	 * thread-safe.
- 	 */
+	 * current NetBSD and OpenBSD), in which case we're not
+	 * thread-safe.
+	 */
 	p = getprotobyname(str);
   #endif
 	if (p != 0)
@@ -685,6 +680,13 @@ __pcap_atoin(const char *s, bpf_u_int32 *addr)
 	/* NOTREACHED */
 }
 
+/*
+ * If 's' is not a string that is a well-formed DECnet address (aa.nnnn),
+ * return zero.  Otherwise parse the address into the low 16 bits of 'addr'
+ * and return a non-zero.  The binary DECnet address consists of a 6-bit area
+ * number and a 10-bit node number; neither area 0 nor node 0 are valid for
+ * normal addressing purposes, but either can appear on the wire.
+ */
 int
 __pcap_atodn(const char *s, bpf_u_int32 *addr)
 {
@@ -692,14 +694,76 @@ __pcap_atodn(const char *s, bpf_u_int32 *addr)
 #define AREAMASK 0176000
 #define NODEMASK 01777
 
-	u_int node, area;
+	/* Initialize to squelch a compiler warning only. */
+	u_int node = 0, area = 0;
+	/*
+	 *               +--+             +--+
+	 *               |  |             |  |
+	 *               v  |             v  |
+	 * --> START --> AREA --> DOT --> NODE -->
+	 *       |          |     |        |
+	 *       |          v     v        |
+	 *       +--------> INVALID <------+
+	 */
+	enum {
+		START,
+		AREA,
+		DOT,
+		NODE,
+		INVALID
+	} fsm_state = START;
 
-	if (sscanf(s, "%d.%d", &area, &node) != 2)
-		return(0);
+	while (*s) {
+		switch (fsm_state) {
+		case START:
+			if (PCAP_ISDIGIT(*s)) {
+				area = *s - '0';
+				fsm_state = AREA;
+				break;
+			}
+			fsm_state = INVALID;
+			break;
+		case AREA:
+			if (*s == '.') {
+				fsm_state = DOT;
+				break;
+			}
+			if (PCAP_ISDIGIT(*s)) {
+				area = area * 10 + *s - '0';
+				if (area <= AREAMASK >> AREASHIFT)
+					break;
+			}
+			fsm_state = INVALID;
+			break;
+		case DOT:
+			if (PCAP_ISDIGIT(*s)) {
+				node = *s - '0';
+				fsm_state = NODE;
+				break;
+			}
+			fsm_state = INVALID;
+			break;
+		case NODE:
+			if (PCAP_ISDIGIT(*s)) {
+				node = node * 10 + *s - '0';
+				if (node <= NODEMASK)
+					break;
+			}
+			fsm_state = INVALID;
+			break;
+		case INVALID:
+			return 0;
+		} /* switch */
+		s++;
+	} /* while */
+	/*
+	 * This condition is false if the string comes from the lexer, but
+	 * let's not depend on that.
+	 */
+	if (fsm_state != NODE)
+		return 0;
 
-	*addr = (area << AREASHIFT) & AREAMASK;
-	*addr |= (node & NODEMASK);
-
+	*addr = area << AREASHIFT | node;
 	return(32);
 }
 
@@ -800,26 +864,3 @@ pcap_ether_hostton(const char *name)
 	return (ap);
 }
 #endif
-
-/*
- * XXX - not guaranteed to be thread-safe!
- */
-int
-#ifdef	DECNETLIB
-__pcap_nametodnaddr(const char *name, u_short *res)
-{
-	struct nodeent *getnodebyname();
-	struct nodeent *nep;
-
-	nep = getnodebyname(name);
-	if (nep == ((struct nodeent *)0))
-		return(0);
-
-	memcpy((char *)res, (char *)nep->n_addr, sizeof(unsigned short));
-	return(1);
-#else
-__pcap_nametodnaddr(const char *name _U_, u_short *res _U_)
-{
-	return(0);
-#endif
-}

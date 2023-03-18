@@ -4,6 +4,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Use C99 fixed-width integer types, rather than self-defined
         fixed-width integer types, in rpcap code.
       Remove an always-false pointer test from snf_read().
+      Clean up DECnet address handling.
     Link-layer types:
       Add LINKTYPE_ETW/DLT_ETW.
       Add LINKTYPE_NETANALYZER_NG/DLT_NETANALYZER_NG (pull request
@@ -13,6 +14,9 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         LINKTYPE_USB_2_0_FULL_SPEED/DLT_USB_2_0_FULL_SPEED,
         LINKTYPE_USB_2_0_HIGH_SPEED/DLT_USB_2_0_HIGH_SPEED
       Add LINKTYPE_AUERSWALD_LOG/DLT_AUERSWALD_LOG.
+      Add LINKTYPE_ZWAVE_TAP/DLT_ZWAVE_TAP.
+      Add LINKTYPE_SILABS_DEBUG_CHANNEL/DLT_SILABS_DEBUG_CHANNEL.
+      Add LINKTYPE_FIRA_UCI/DLT_FIRA_UCI.
     Packet filtering:
       Add support for Block Ack Req and Block Ack frame types (pull
         request #1039).
@@ -26,6 +30,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         another incorporate-remote-capture project. (issue #1120)
     Documentation:
       Document a standard format for writing out BPF filter programs.
+      Document pcap-config better.
     Building and testing:
       Apply GNU Hurd support patch from the Debian package.
       cmake: Update the minimum required version to 2.8.12 (except Windows).
@@ -39,6 +44,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Makefile.in: Add a "touch .devel" command in the releasecheck target.
       autoconf: Add autogen.sh, remove configure and config.h.in and put
         these generated files in the release tarball.
+      autoconf: Add the option to print functions and files names.
 
 DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
   Summary for 1.10.4 libpcap release (so far!)
@@ -1063,7 +1069,7 @@ Tue.	September 19, 2006. ken@xelerance.com. Summary for 0.9.5 libpcap release
 	Add support to build libpcap.lib and wpcap.dll under Cygnus and
 	 MingW32.
 
-Mon. 	September 5, 2005.  ken@xelerance.com. Summary for 0.9.4 libpcap release
+Mon.	September 5, 2005.  ken@xelerance.com. Summary for 0.9.4 libpcap release
 
 	Support for radiotap on Linux (Mike Kershaw)
 	Fixes for HP-UX
@@ -1074,7 +1080,7 @@ Mon. 	September 5, 2005.  ken@xelerance.com. Summary for 0.9.4 libpcap release
 	parts of the filter expression to look at the PPP headers and
 	headers in the PPP payload
 
-Tue. 	July 5, 2005.  ken@xelerance.com. Summary for 0.9.3 libpcap release
+Tue.	July 5, 2005.  ken@xelerance.com. Summary for 0.9.3 libpcap release
 
 	Fixes for compiling on nearly every platform,
 		including improved 64bit support
@@ -1113,16 +1119,16 @@ Wed.   November 12, 2003. mcr@sandelman.ottawa.on.ca. Summary for 0.8 release
 
 Tuesday, February 25, 2003. fenner@research.att.com.  0.7.2 release
 
- 	Support link types that use 802.2 always, never, and sometimes.
- 	Don't decrease the size of the BPF buffer from the default.
- 	Support frame relay.
- 	Handle 32-bit timestamps in DLPI, and pass the right buffer size.
- 	Handle Linux systems with modern kernel but without
- 	 SOL_PACKET in the userland headers.
- 	Linux support for ARPHRD_RAWHDLC.
- 	Handle 32-bit timestamps in snoop.
- 	Support eg (Octane/O2xxx/O3xxx Gigabit) devices.
- 	Add new reserved DLT types.
+	Support link types that use 802.2 always, never, and sometimes.
+	Don't decrease the size of the BPF buffer from the default.
+	Support frame relay.
+	Handle 32-bit timestamps in DLPI, and pass the right buffer size.
+	Handle Linux systems with modern kernel but without
+	 SOL_PACKET in the userland headers.
+	Linux support for ARPHRD_RAWHDLC.
+	Handle 32-bit timestamps in snoop.
+	Support eg (Octane/O2xxx/O3xxx Gigabit) devices.
+	Add new reserved DLT types.
 
 Monday October 23, 2001. mcr@sandelman.ottawa.on.ca. Summary for 0.7 release
 

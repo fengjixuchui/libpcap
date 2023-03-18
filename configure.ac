@@ -29,9 +29,6 @@ AC_SUBST(PACKAGE_NAME)
 # except temporarily during tests that involve compilation).  Used only
 # when compiling C source.
 #
-# CXXFLAGS: inherited from the environment, not modified by us.  Used only
-# when compiling C++ source.
-#
 # LDFLAGS: inherited from the environment, not modified by us.
 #
 # LIBS: inherited from the environment; we add libraries required by
@@ -63,7 +60,7 @@ AC_SUBST(PACKAGE_NAME)
 # libpcap.  Used in Makefile for both C and C++ source.
 #
 # ADDITIONAL_LIBS: additional libraries with which the libpcap dynamic
-# library needs to be linked.  Used in Makwfile; not used in pcap-config
+# library needs to be linked.  Used in Makefile; not used in pcap-config
 # or libpcap.pc, as, in all platforms on which we run, if a dynamic
 # library is linked with other dynamic libraries, a program using
 # that dynamic library doesn't have to link with those libraries -
@@ -120,41 +117,6 @@ fi
 #
 AC_CHECK_SIZEOF([void *])
 ac_lbl_c_sizeof_void_p="$ac_cv_sizeof_void_p"
-
-#
-# We only need a C++ compiler for Haiku; all code except for its
-# pcap module is in C.
-#
-case "$host_os" in
-haiku*)
-	AC_PROG_CXX
-
-	#
-	# Make sure C and C++ have the same pointer sizes with the flags
-	# they're given; if they don't, it means that the compilers for the
-	# languages will, with those flags, not produce code that can be
-	# linked together.
-	#
-	# We have to use different data types, because the results of
-	# a test are cached, so if we test for the size of a given type
-	# in C, the subsequent test in C++ will use the cached variable.
-	# We trick autoconf by testing the size of a "void *" in C and a
-	# "const void *" in C++.
-	#
-	AC_LANG_PUSH([C++])
-	AC_CHECK_SIZEOF([const void *])
-	ac_lbl_cxx_sizeof_void_p="$ac_cv_sizeof_const_void_p"
-	AC_LANG_POP([C++])
-	if test "$ac_lbl_cxx_sizeof_void_p" -eq 0; then
-		AC_MSG_ERROR([No C++ compiler was found])
-	fi
-	if test "$ac_lbl_c_sizeof_void_p" -ne "$ac_lbl_cxx_sizeof_void_p"; then
-		AC_MSG_ERROR([C compiler $CC produces code with $ac_lbl_c_sizeof_void_p-byte pointers
-while C++ compiler $CXX produces code with $ac_lbl_cxx_sizeof_void_p-byte pointers.  This prevents
-code in those languages from being combined.])
-	fi
-	;;
-esac
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
@@ -219,7 +181,7 @@ main(void)
 )
 	    ],
 	    [
-	        # GNU-style
+		# GNU-style
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_GNU_STRERROR_R,,
 		    [Define to 1 if you have a GNU-style `strerror_r' function.])
@@ -321,16 +283,16 @@ AC_LBL_LIBRARY_NET
 AC_CHECK_DECL(getnetbyname_r,
     [
 	AC_MSG_CHECKING([for the Linux getnetbyname_r()])
-	AC_TRY_LINK(
-	    [#include <netdb.h>],
-	    [
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	    [[#include <netdb.h>]],
+	    [[
 		struct netent netent_buf;
 		char buf[1024];
 		struct netent *resultp;
 		int h_errnoval;
 
 		return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
-	    ],
+	    ]])],
 	    [
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_LINUX_GETNETBYNAME_R, 1,
@@ -340,14 +302,14 @@ AC_CHECK_DECL(getnetbyname_r,
 		AC_MSG_RESULT(no)
 
 		AC_MSG_CHECKING([for Solaris/IRIX getnetbyname_r()])
-		AC_TRY_LINK(
-		    [#include <netdb.h>],
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[#include <netdb.h>]],
+		    [[
 			struct netent netent_buf;
 			char buf[1024];
 
 			return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			AC_DEFINE(HAVE_SOLARIS_IRIX_GETNETBYNAME_R, 1,
@@ -357,14 +319,14 @@ AC_CHECK_DECL(getnetbyname_r,
 			AC_MSG_RESULT(no)
 
 			AC_MSG_CHECKING([for AIX getnetbyname_r()])
-			AC_TRY_LINK(
-			    [#include <netdb.h>],
-			    [
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			    [[#include <netdb.h>]],
+			    [[
 				struct netent netent_buf;
 				struct netent_data net_data;
 
 				return getnetbyname_r((const char *)0, &netent_buf, &net_data);
-			    ],
+			    ]])],
 			    [
 				AC_MSG_RESULT(yes)
 				AC_DEFINE(HAVE_AIX_GETNETBYNAME_R, 1,
@@ -393,15 +355,15 @@ AC_CHECK_DECL(getnetbyname_r,
 AC_CHECK_DECL(getprotobyname_r,
     [
 	AC_MSG_CHECKING([for the Linux getprotobyname_r()])
-	AC_TRY_LINK(
-	    [#include <netdb.h>],
-	    [
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	    [[#include <netdb.h>]],
+	    [[
 		struct protoent protoent_buf;
 		char buf[1024];
 		struct protoent *resultp;
 
 		return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
-	    ],
+	    ]])],
 	    [
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_LINUX_GETPROTOBYNAME_R, 1,
@@ -411,14 +373,14 @@ AC_CHECK_DECL(getprotobyname_r,
 		AC_MSG_RESULT(no)
 
 		AC_MSG_CHECKING([for Solaris/IRIX getprotobyname_r()])
-		AC_TRY_LINK(
-		    [#include <netdb.h>],
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[#include <netdb.h>]],
+		    [[
 			struct protoent protoent_buf;
 			char buf[1024];
 
 			return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			AC_DEFINE(HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R, 1,
@@ -428,14 +390,14 @@ AC_CHECK_DECL(getprotobyname_r,
 			AC_MSG_RESULT(no)
 
 			AC_MSG_CHECKING([for AIX getprotobyname_r()])
-			AC_TRY_LINK(
-			    [#include <netdb.h>],
-			    [
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			    [[#include <netdb.h>]],
+			    [[
 				struct protoent protoent_buf;
 				struct protoent_data proto_data;
 
 				return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
-			    ],
+			    ]])],
 			    [
 				AC_MSG_RESULT(yes)
 				AC_DEFINE(HAVE_AIX_GETPROTOBYNAME_R, 1,
@@ -667,6 +629,26 @@ AC_CHECK_HEADER(pthread.h,
     ]
 )
 
+AC_MSG_CHECKING([whether to enable the instrument functions code])
+AC_ARG_ENABLE([instrument-functions],
+   [AS_HELP_STRING([--enable-instrument-functions],
+     [enable instrument functions code [default=no]])],
+   [],
+   [enableval=no])
+case "$enableval" in
+yes)	AC_MSG_RESULT(yes)
+	AC_DEFINE(ENABLE_INSTRUMENT_FUNCTIONS, 1,
+	    [define if you want to build the instrument functions code])
+	# Add '-finstrument-functions' instrumentation option to generate
+	# instrumentation calls for entry and exit to functions.
+	# Use '--enable-instrument-functions' also with tcpdump (or tcpslice)
+	# to see the output.
+	CFLAGS="$CFLAGS -O0 -ggdb -finstrument-functions"
+	;;
+*)	AC_MSG_RESULT(no)
+	;;
+esac
+
 dnl to pacify those who hate protochain insn
 AC_MSG_CHECKING(if --disable-protochain option is specified)
 AC_ARG_ENABLE(protochain,
@@ -734,8 +716,8 @@ else
 		#
 		AC_MSG_CHECKING(if net/bpf.h defines BIOCSETIF)
 		AC_CACHE_VAL(ac_cv_lbl_bpf_h_defines_biocsetif,
-			AC_TRY_COMPILE(
-[
+			AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+[[
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
@@ -745,10 +727,10 @@ else
 #endif
 #include <net/bpf.h>
 #include <net/if.h>
-],
-			[u_int i = BIOCSETIF;],
-			ac_cv_lbl_bpf_h_defines_biocsetif=yes,
-			ac_cv_lbl_bpf_h_defines_biocsetif=no))
+]],
+			[[u_int i = BIOCSETIF;]])],
+			[ac_cv_lbl_bpf_h_defines_biocsetif=yes],
+			[ac_cv_lbl_bpf_h_defines_biocsetif=no]))
 		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
 	fi
 	AC_CHECK_HEADERS(net/pfilt.h net/enet.h)
@@ -783,9 +765,9 @@ else
 		V_PCAP=linux
 		VALGRINDTEST_SRC=valgrindtest.c
 	elif test "$ac_cv_header_net_pfilt_h" = yes; then
-	        #
-	        # DEC OSF/1, Digital UNIX, Tru64 UNIX
-        	#
+		#
+		# DEC OSF/1, Digital UNIX, Tru64 UNIX
+		#
 		V_PCAP=pf
 	elif test "$ac_cv_header_net_enet_h" = yes; then
 		#
@@ -956,15 +938,15 @@ dlpi)
 	#
 	AC_MSG_CHECKING(whether <sys/dlpi.h> is usable)
 	AC_CACHE_VAL(ac_cv_sys_dlpi_usable,
-		AC_TRY_COMPILE(
-		    [
+		AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+		    [[
 			#include <sys/types.h>
 			#include <sys/time.h>
 			#include <sys/dlpi.h>
-		    ],
-		    [int i = DL_PROMISC_PHYS;],
-		    ac_cv_sys_dlpi_usable=yes,
-		    ac_cv_sys_dlpi_usable=no))
+		    ]],
+		    [[int i = DL_PROMISC_PHYS;]])],
+		    [ac_cv_sys_dlpi_usable=yes],
+		    [ac_cv_sys_dlpi_usable=no]))
 	AC_MSG_RESULT($ac_cv_sys_dlpi_usable)
 	if test $ac_cv_sys_dlpi_usable = no ; then
 		AC_MSG_ERROR(<sys/dlpi.h> is not usable on this system; it probably has a non-standard DLPI)
@@ -987,7 +969,7 @@ enet)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-enet.c"
+	PLATFORM_C_SRC="pcap-enet.c"
 	;;
 
 haiku)
@@ -1006,7 +988,7 @@ linux)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-linux.c"
+	PLATFORM_C_SRC="pcap-linux.c"
 
 	#
 	# Do we have the wireless extensions?
@@ -1107,7 +1089,7 @@ bpf)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-bpf.c"
+	PLATFORM_C_SRC="pcap-bpf.c"
 
 	#
 	# Check whether we have the *BSD-style ioctls.
@@ -1132,21 +1114,21 @@ pf)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-pf.c"
+	PLATFORM_C_SRC="pcap-pf.c"
 	;;
 
 snit)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-snit.c"
+	PLATFORM_C_SRC="pcap-snit.c"
 	;;
 
 snoop)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-snoop.c"
+	PLATFORM_C_SRC="pcap-snoop.c"
 	;;
 
 hurd)
@@ -1198,7 +1180,7 @@ null)
 	#
 	# Capture module
 	#
- 	PLATFORM_C_SRC="pcap-null.c"
+	PLATFORM_C_SRC="pcap-null.c"
 	;;
 
 *)
@@ -1256,15 +1238,15 @@ then
 		#
 		AC_MSG_CHECKING(whether we have SIOCGLIFCONF)
 		AC_CACHE_VAL(ac_cv_lbl_have_siocglifconf,
-		    AC_TRY_COMPILE(
-			[#include <sys/param.h>
+		    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+			[[#include <sys/param.h>
 			#include <sys/file.h>
 			#include <sys/ioctl.h>
 			#include <sys/socket.h>
-			#include <sys/sockio.h>],
-			[ioctl(0, SIOCGLIFCONF, (char *)0);],
-			ac_cv_lbl_have_siocglifconf=yes,
-			ac_cv_lbl_have_siocglifconf=no))
+			#include <sys/sockio.h>]],
+			[[ioctl(0, SIOCGLIFCONF, (char *)0);]])],
+			[ac_cv_lbl_have_siocglifconf=yes],
+			[ac_cv_lbl_have_siocglifconf=no]))
 		AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
 		if test $ac_cv_lbl_have_siocglifconf = yes ; then
 			PLATFORM_C_SRC="$PLATFORM_C_SRC fad-glifc.c"
@@ -1686,16 +1668,16 @@ if test "$want_turbocap" != no; then
 		LDFLAGS="$LDFLAGS $TURBOCAP_LDFLAGS"
 	fi
 
-	AC_TRY_COMPILE(
-	[
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+	[[
 	    #include <TcApi.h>
-	],
-	[
+	]],
+	[[
 	    TC_INSTANCE a; TC_PORT b; TC_BOARD c;
 	    TC_INSTANCE i;
 	    (void)TcInstanceCreateByName("foo", &i);
-	],
-	ac_cv_lbl_turbocap_api=yes)
+	]])],
+	[ac_cv_lbl_turbocap_api=yes])
 
 	AC_LBL_RESTORE_CHECK_STATE
 	if test $ac_cv_lbl_turbocap_api = yes; then
@@ -1868,14 +1850,14 @@ yes)	AC_MSG_RESULT(yes)
 		CFLAGS="$CFLAGS -I/usr/local/include"
 		LIBS="$LIBS -L/usr/local/lib -lssl -lcrypto"
 		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local that we can use)
-		AC_TRY_LINK(
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[
 #include <openssl/ssl.h>
-		    ],
-		    [
+		    ]],
+		    [[
 SSL_library_init();
 return 0;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			HAVE_OPENSSL=yes
@@ -1902,14 +1884,14 @@ return 0;
 		AC_LBL_SAVE_CHECK_STATE
 		LIBS="$LIBS -lssl -lcrypto"
 		AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
-		AC_TRY_LINK(
-		    [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[
 #include <openssl/ssl.h>
-		    ],
-		    [
+		    ]],
+		    [[
 SSL_library_init();
 return 0;
-		    ],
+		    ]])],
 		    [
 			AC_MSG_RESULT(yes)
 			HAVE_OPENSSL=yes
@@ -1964,7 +1946,7 @@ AC_MSG_RESULT(${enable_yydebug-no})
 #
 # Look for {f}lex.
 #
-AC_PROG_LEX
+AC_PROG_LEX(noyywrap)
 if test "$LEX" = ":"; then
 	AC_MSG_ERROR([Neither flex nor lex was found.])
 fi
@@ -2239,9 +2221,9 @@ darwin*)
 			AC_MSG_CHECKING(whether building for 32-bit x86 is supported)
 			AC_LBL_SAVE_CHECK_STATE
 			CFLAGS="$CFLAGS -arch i386"
-			AC_TRY_LINK(
-			    [],
-			    [return 0;],
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+			    [[]],
+			    [[return 0;]])],
 			    [
 				AC_MSG_RESULT(yes)
 				V_LIB_CCOPT_FAT="-arch x86_64"
@@ -2321,14 +2303,14 @@ darwin*)
 				AC_LBL_SAVE_CHECK_STATE
 				CFLAGS="$CFLAGS -arch x86_64 -arch arm64"
 				LDFLAGS="$LDFLAGS $OPENSSL_LIBS"
-				AC_TRY_LINK(
-				    [
+				AC_LINK_IFELSE([AC_LANG_PROGRAM(
+				    [[
 					#include <openssl/ssl.h>
-				    ],
-				    [
+				    ]],
+				    [[
 					SSL_library_init();
 					return 0;
-				    ],
+				    ]])],
 				    [
 					AC_MSG_RESULT(yes)
 					V_LIB_CCOPT_FAT="-arch x86_64 -arch arm64"
@@ -2434,20 +2416,6 @@ osf*)
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
 	MAN_DEVICES=7
-	;;
-
-sinix*)
-	AC_MSG_CHECKING(if SINIX compiler defines sinix)
-	AC_CACHE_VAL(ac_cv_cc_sinix_defined,
-		AC_TRY_COMPILE(
-		    [],
-		    [int i = sinix;],
-		    ac_cv_cc_sinix_defined=yes,
-		    ac_cv_cc_sinix_defined=no))
-	    AC_MSG_RESULT($ac_cv_cc_sinix_defined)
-	    if test $ac_cv_cc_sinix_defined = no ; then
-		    AC_DEFINE(sinix,1,[on sinix])
-	    fi
 	;;
 
 solaris*)
@@ -2614,7 +2582,7 @@ if test "xxx_only" != yes; then
     #
     AC_MSG_CHECKING(whether we can compile the netfilter support)
     AC_CACHE_VAL(ac_cv_netfilter_can_compile,
-      AC_TRY_COMPILE([
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 AC_INCLUDES_DEFAULT
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -2624,10 +2592,10 @@ AC_INCLUDES_DEFAULT
 #include <linux/netfilter.h>
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_log.h>
-#include <linux/netfilter/nfnetlink_queue.h>],
-        [],
-        ac_cv_netfilter_can_compile=yes,
-        ac_cv_netfilter_can_compile=no))
+#include <linux/netfilter/nfnetlink_queue.h>]],
+        [[]])],
+        [ac_cv_netfilter_can_compile=yes],
+        [ac_cv_netfilter_can_compile=no]))
     AC_MSG_RESULT($ac_cv_netfilter_can_compile)
     if test $ac_cv_netfilter_can_compile = yes ; then
       AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
@@ -2654,13 +2622,13 @@ if test "x$enable_netmap" != "xno" ; then
 	#
 	AC_MSG_CHECKING(whether we can compile the netmap support)
 	AC_CACHE_VAL(ac_cv_net_netmap_user_can_compile,
-	  AC_TRY_COMPILE([
+	  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 AC_INCLUDES_DEFAULT
 #define NETMAP_WITH_LIBS
-#include <net/netmap_user.h>],
-	    [],
-	    ac_cv_net_netmap_user_can_compile=yes,
-	    ac_cv_net_netmap_user_can_compile=no))
+#include <net/netmap_user.h>]],
+	    [[]])],
+	    [ac_cv_net_netmap_user_can_compile=yes],
+	    [ac_cv_net_netmap_user_can_compile=no]))
 	AC_MSG_RESULT($ac_cv_net_netmap_user_can_compile)
 	if test $ac_cv_net_netmap_user_can_compile = yes ; then
 	  AC_DEFINE(PCAP_SUPPORT_NETMAP, 1,
@@ -2912,14 +2880,14 @@ if test "x$enable_bluetooth" != "xno" ; then
 				#
 				AC_MSG_CHECKING(if HCI_CHANNEL_MONITOR is defined)
 				AC_CACHE_VAL(ac_cv_lbl_hci_channel_monitor_is_defined,
-				    AC_TRY_COMPILE(
-					[
+				    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+					[[
 					    #include <bluetooth/bluetooth.h>
 					    #include <bluetooth/hci.h>
-					],
-					[
+					]],
+					[[
 					    u_int i = HCI_CHANNEL_MONITOR;
-					],
+					]])],
 					[
 					    AC_MSG_RESULT(yes)
 					    AC_DEFINE(PCAP_SUPPORT_BT_MONITOR,,
@@ -3008,14 +2976,14 @@ if test "x$enable_dbus" != "xno"; then
 		CFLAGS="$CFLAGS $DBUS_CFLAGS"
 		LIBS="$LIBS $DBUS_LIBS"
 		AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
-		AC_TRY_LINK(
-		    [#include <string.h>
+		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		    [[#include <string.h>
 
 		     #include <time.h>
 		     #include <sys/time.h>
 
-		     #include <dbus/dbus.h>],
-		    [return dbus_connection_read_write(NULL, 0);],
+		     #include <dbus/dbus.h>]],
+		    [[return dbus_connection_read_write(NULL, 0);]])],
 		    [
 			AC_MSG_RESULT([yes])
 			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
@@ -3093,14 +3061,14 @@ if test "x$enable_rdma" != "xno"; then
 			# to know the function's signature).
 			#
 			AC_MSG_CHECKING(whether libibverbs defines ibv_create_flow)
-			AC_TRY_LINK(
-				[
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
+				[[
 					#include <infiniband/verbs.h>
-				],
-				[
+				]],
+				[[
 					(void) ibv_create_flow((struct ibv_qp *) NULL,
 							       (struct ibv_flow_attr *) NULL);
-				],
+				]])],
 				[
 					AC_MSG_RESULT([yes])
 					found_usable_libibverbs=yes
@@ -3193,7 +3161,6 @@ AC_SUBST(RPATH)
 AC_SUBST(ADDLOBJS)
 AC_SUBST(ADDLARCHIVEOBJS)
 AC_SUBST(PLATFORM_C_SRC)
-AC_SUBST(PLATFORM_CXX_SRC)
 AC_SUBST(MODULE_C_SRC)
 AC_SUBST(REMOTE_C_SRC)
 AC_SUBST(PTHREAD_LIBS)

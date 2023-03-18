@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "19 November 2022"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "12 March 2023"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -107,7 +107,7 @@ E.g., `\fBether src\fP foo', `\fBarp net\fP 128.3', `\fBtcp port\fP 21',
 If there is no
 .I proto
 qualifier, all protocols consistent with the type are assumed.
-E.g., `\fBsrc\fP foo' means `\fB(ip or arp or rarp) src\fP foo',
+E.g., `\fBsrc\fP foo' means `\fB(ip6 or ip or arp or rarp) src\fP foo',
 `\fBnet\fP bar' means `\fB(ip or arp or rarp) net\fP bar' and
 `\fBport\fP 53' means `\fB(tcp or udp or sctp) port\fP 53'
 (note that these examples use invalid syntax to illustrate the principle).
@@ -212,7 +212,7 @@ number (e.g., 10); the netmask is 255.255.255.255 for a dotted quad
 (which means that it's really a host match), 255.255.255.0 for a dotted
 triple, 255.255.0.0 for a dotted pair, or 255.0.0.0 for a single number.
 An IPv6 network number must be written out fully; the netmask is
-ff:ff:ff:ff:ff:ff:ff:ff, so IPv6 "network" matches are really always
+ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff, so IPv6 "network" matches are really always
 host matches, and a network match requires a netmask length.
 .IP "\fBsrc net \fInetnameaddr\fR"
 True if the IPv4/v6 source address of the packet has a network
@@ -476,10 +476,11 @@ currently know how to parse these protocols.
 .IP "\fBdecnet src \fIdecnetaddr\fR"
 True if the DECnet source address is
 .IR decnetaddr ,
-which may be an address of the form ``10.123'', or a DECnet host
-name.
-[DECnet host name support is only available on ULTRIX systems
-that are configured to run DECnet.]
+which is an address of the form
+.B AREANUMBER.NODENUMBER
+(for example, "10.123"), where the area number can be between 0 and 63
+and the node number can be between 0 and 1023 and both numbers always use
+decimal base.
 .IP "\fBdecnet dst \fIdecnetaddr\fR"
 True if the DECnet destination address is
 .IR decnetaddr .
