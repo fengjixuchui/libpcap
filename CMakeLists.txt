@@ -1303,17 +1303,25 @@ endif()
 # obvious CMake debugging flag reveals, it doesn't realize that if we
 # turn sanitizer stuff on).
 #
-set(SANITIZER_FLAGS "")
-foreach(sanitizer IN LISTS ENABLE_SANITIZERS)
+# Note: apparently, some projects have decided that ENABLE_SANITIZERS
+# is a Boolean, with OFF meaning "no sanitizers" and ON meaning "all
+# sanitizers".  Whoever decided that didn't put it up as a common
+# CMake idiom, as far as I can tell; we only discovered this because
+# JetBrains' CLion "helpfully" appears to pass -DENABLE_SANITIZERS=OFF
+# to CMake by default, which causes CMake to fail on libpcap.  Thanks!
+#
+# We thus also allow a setting of OFF to mean "no sanitizers" and ON to
+# mean "all supported sanitizers that we know about and that can all
+# be used together".
+#
+macro(test_sanitizer _sanitizer _sanitizer_flag)
+    message(STATUS "Checking sanitizer ${_sanitizer}")
+    set(sanitizer_variable "sanitize_${_sanitizer}")
     # Set -Werror to catch "argument unused during compilation" warnings
-
-    message(STATUS "Checking sanitizer ${sanitizer}")
-    set(sanitizer_variable "sanitize_${sanitizer}")
-    set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize=${sanitizer}")
-    check_c_compiler_flag("-fsanitize=${sanitizer}" ${sanitizer_variable})
+    set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize=${_sanitizer}")
+    check_c_compiler_flag("-fsanitize=${_sanitizer}" ${sanitizer_variable})
     if(${${sanitizer_variable}})
-        set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fsanitize=${sanitizer}")
-        message(STATUS "${sanitizer} sanitizer supported using -fsanitizer=${sanitizer}")
+        set(${_sanitizer_flag} "-fsanitize=${_sanitizer}")
     else()
         #
         # Try the versions supported prior to Clang 3.2.
@@ -1322,31 +1330,101 @@ foreach(sanitizer IN LISTS ENABLE_SANITIZERS)
         # Otherwise, give up.
         #
         set(sanitizer_variable "OLD_${sanitizer_variable}")
-        if ("${sanitizer}" STREQUAL "address")
+        if ("${_sanitizer}" STREQUAL "address")
             set(CMAKE_REQUIRED_FLAGS "-Werror -fsanitize-address")
             check_c_compiler_flag("-fsanitize-address" ${sanitizer_variable})
             if(${${sanitizer_variable}})
-                set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fsanitize-address")
-                message(STATUS "${sanitizer} sanitizer supported using -fsanitize-address")
-            else()
-                message(FATAL_ERROR "${sanitizer} isn't a supported sanitizer")
+                set(${_sanitizer_flag} "-fsanitize-address")
             endif()
-        elseif("${sanitizer}" STREQUAL "undefined")
+        elseif("${_sanitizer}" STREQUAL "undefined")
             set(CMAKE_REQUIRED_FLAGS "-Werror -fcatch-undefined-behavior")
             check_c_compiler_flag("-fcatch-undefined-behavior" ${sanitizer_variable})
             if(${${sanitizer_variable}})
-                set(SANITIZER_FLAGS "${SANITIZER_FLAGS} -fcatch-undefined-behavior")
-                message(STATUS "${sanitizer} sanitizer supported using catch-undefined-behavior")
+                set(${_sanitizer_flag} "-fcatch-undefined-behavior")
+            endif()
+        endif()
+    endif()
+    unset(CMAKE_REQUIRED_FLAGS)
+endmacro(test_sanitizer)
+
+set(SANITIZER_FLAGS "")
+if("${ENABLE_SANITIZERS}")
+    #
+    # This appears to indicate that ENABLE_SANITIZERS was set to a
+    # string value that is "one of the true constants", meaning
+    # "1, ON, YES, TRUE, Y, or a non-zero number".
+    #
+    # It does not appear to happen for other settings, including
+    # setting it to a list of one or more sanitizers.
+    #
+    # This setting means "enable all sanitizers that the compiler
+    # supports".
+    #
+    foreach(sanitizer "address" "undefined")
+        unset(SANITIZER_FLAG)
+        test_sanitizer(${sanitizer} SANITIZER_FLAG)
+        if(SANITIZER_FLAG)
+            message(STATUS "${sanitizer} sanitizer supported using ${SANITIZER_FLAG}")
+            set(SANITIZER_FLAGS "${SANITIZER_FLAGS} ${SANITIZER_FLAG}")
+        else()
+            message(STATUS "${sanitizer} isn't a supported sanitizer")
+        endif()
+    endforeach()
+    if("${SANITIZER_FLAGS}" STREQUAL "")
+        message(FATAL_ERROR "No supported sanitizers found")
+    endif()
+else()
+    #
+    # This appears to indicate that ENABLE_SANITIZERS was either:
+    #
+    #   not set;
+    #   set to a set to a string value that is not "one of the true
+    #   constants", meaning "1, ON, YES, TRUE, Y, or a non-zero number".
+    #
+    # The latter includes setting it to "one of the false constants",
+    # meaning the string "is 0, OFF, NO, FALSE, N, IGNORE, NOTFOUND,
+    # the empty string, or ends in the suffix -NOTFOUND."
+    #
+    # It also includes setting it to a list of one or more sanitizers.
+    #
+    # We want to treat "not set" and "set to one of the false constants"
+    # as meaning "do not enable any sanitizers".
+    #
+    # We want to treat "set to a list of one or more sanitizers" as
+    # meaning "enable all the sanitizers in the list".
+    #
+    # This requires that we distinguish between those two cases.
+    #
+    if(ENABLE_SANITIZERS)
+        #
+        # This appears to indicate that ENABLE_SANITIZERS was set to
+        # a string value that is "not one of the false constants".
+        #
+        # We already know it's "not one of the true constants", so
+        # we treat it as a list of sanitizers.
+        #
+        foreach(sanitizer IN LISTS ENABLE_SANITIZERS)
+            unset(SANITIZER_FLAG)
+            test_sanitizer(${sanitizer} SANITIZER_FLAG)
+            if(SANITIZER_FLAG)
+                message(STATUS "${sanitizer} sanitizer supported using ${SANITIZER_FLAG}")
+                set(SANITIZER_FLAGS "${SANITIZER_FLAGS} ${SANITIZER_FLAG}")
             else()
                 message(FATAL_ERROR "${sanitizer} isn't a supported sanitizer")
             endif()
-        else()
-            message(FATAL_ERROR "${sanitizer} isn't a supported sanitizer")
-        endif()
+        endforeach()
+    else()
+        #
+        # This appears to indicate that ENABLE_SANITIZERS was either:
+        #
+        #   not set;
+        #   set to a value that's "one of the false constants";
+        #
+        # so we don't enable any sanitizers.
+        #
+        message(STATUS "Not enabling sanitizers")
     endif()
-
-    unset(CMAKE_REQUIRED_FLAGS)
-endforeach()
+endif()
 
 if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")

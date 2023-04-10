@@ -47,8 +47,10 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
         these generated files in the release tarball.
       autoconf: Add the option to print functions and files names.
 
-DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
-  Summary for 1.10.4 libpcap release (so far!)
+Friday, April 7, 2023 / The Tcpdump Group
+  Summary for 1.10.4 libpcap release
+    Source code:
+      Fix spaces before tabs in indentation.
     rpcap:
       Fix name of launchd service.
     Documentation:
@@ -57,6 +59,7 @@ DayOfTheWeek, Month DD, YYYY / The Tcpdump Group
       Require at least pkg-config 0.17.0, as we use --static.
       Get rid of the remains of gnuc.h.
       Require at least autoconf 2.69.
+      Update config.{guess,sub}, timestamps 2023-01-01,2023-01-21.
 
 Thursday, January 12, 2023 / The Tcpdump Group
   Summary for 1.10.3 libpcap release
